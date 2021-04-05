@@ -22,8 +22,8 @@
         constructor() {
           super();
           this.state = {
-            username: '',
-            password: '',
+            username: "",
+            password: "",
           };
           this.onChange = this.onChange.bind(this);
           this.onSubmit = this.onSubmit.bind(this);
@@ -57,37 +57,49 @@
           super();
           this.state = {
             auth: {},
+            notes: [],
           };
           this.signIn = this.signIn.bind(this);
           this.logout = this.logout.bind(this);
         }
         logout() {
-          window.localStorage.removeItem('token');
+          window.localStorage.removeItem("token");
           this.setState({ auth: {} });
         }
         async attemptTokenLogin() {
-          const token = window.localStorage.getItem('token');
+          const token = window.localStorage.getItem("token");
           if (token) {
-            const response = await axios.get('/api/auth', {
+            const response = await axios.get("/api/auth", {
               headers: {
                 authorization: token,
               },
             });
-            this.setState({ auth: response.data });
+            let { data: notes } = await axios.get(
+              `/api/users/${response.data.id}/notes`,
+              {
+                headers: {
+                  authorization: token,
+                },
+              }
+            );
+            console.log(notes);
+            this.setState({ auth: response.data, notes: notes });
           }
         }
         componentDidMount() {
           this.attemptTokenLogin();
         }
+
         async signIn(credentials) {
-          let response = await axios.post('/api/auth', credentials);
+          let response = await axios.post("/api/auth", credentials);
           const { token } = response.data;
-          window.localStorage.setItem('token', token);
+          window.localStorage.setItem("token", token);
           this.attemptTokenLogin();
         }
         render() {
           const { auth } = this.state;
           const { signIn, logout } = this;
+
           if (!auth.id) {
             return <SignIn signIn={signIn} />;
           } else {
@@ -95,12 +107,17 @@
               <div>
                 Welcome {auth.username}
                 <button onClick={logout}>Logout</button>
+                <ul>
+                  {this.state.notes.map((note) => (
+                    <li>{note.text}</li>
+                  ))}
+                </ul>
               </div>
             );
           }
         }
       }
-      ReactDOM.render(<App />, document.querySelector('#root'));
+      ReactDOM.render(<App />, document.querySelector("#root"));
     </script>
   </body>
 </html>
